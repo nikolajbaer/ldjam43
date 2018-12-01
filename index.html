@@ -23,6 +23,20 @@ var assetsObj = {
             map: {
                 sheep: [0,0]
             } 
+        },
+        "bush.png": {
+            tile: 150,
+            tileh: 70,
+            map: {
+                bush: [0,0]
+            }
+        },
+        "wolf.png": {
+            tile: 100,
+            tileh: 100,
+            map: {
+                wolf: [0,0]
+            }
         }
     }
 }
@@ -30,11 +44,16 @@ var assetsObj = {
 function run(){
     var W = Crafty.stage.elem.clientWidth;
     var H = Crafty.stage.elem.clientHeight;
-    
+   
+    Crafty.createLayer("SheepCanvas","Canvas",{z:1000});
+    Crafty.createLayer("BushCanvas","Canvas",{z:200});
+    Crafty.createLayer("WolfCanvas","Canvas",{z:100});
+ 
     var sheep = Crafty.c("Sheep",{
-        required: "2D, Canvas, sheep, Gravity, Collide",
+        required: "2D, SheepCanvas, sheep, Gravity, Collide",
         events: {
             "LandedOnGround": function(){
+                if(this.dead){ this.vx = 0; return; }
                 this.vy = (-Math.random()*100 - 100) * (Math.abs(this.fear) + 0.5);
                 this.vx = Math.random() * 100;
                 if(this.fear > 0 ){
@@ -51,7 +70,8 @@ function run(){
 
                 if(this.vx < 0){ this.flip("X")
                 }else{ this.unflip("X") }       
- 
+                if(this.dead){ this.flip("Y"); } 
+
                 // Subside Fear
                 if(this.fear > 0){
                     this.fear -= 0.25 * (e.dt/1000); // fear subsides
@@ -72,13 +92,55 @@ function run(){
             this.w = 73;
             this.h = 50;  
             this.fear = 0; // bias on vx in hop 
+            this.dead = false;
         }
     });
-    
-    var floor = Crafty.e("2D, Canvas, Color, platform,Mouse")
+   
+    // Build Floor 
+    var floor = Crafty.e("2D, SheepCanvas, Color, platform, Mouse")
         .color("green")
         .attr({x:0, y:H-5,w:W,h:5});
-    
+    // And bushes
+    for(var i=0; i<(W/100); i++){
+        Crafty.e("bush, 2D, BushCanvas")
+            .attr({x:i*100+(5-Math.random()*10),y:H-70,w:125,h:70});
+    }
+
+    // TODO make bush and wolf into components   
+    var wolf = Crafty.e("2D, wolf, WolfCanvas, Tween, Delay")
+        .attr({x: W/2, y: H})
+        .delay(function(){
+            var b = Crafty("bush").get( Math.floor(Math.random() * Crafty("bush").length))
+            // TODO wiggle bus then tween
+            this.x = b.x;
+            this.y = H; 
+            this.tween({y:H-140},500);
+
+            this.delay(function(){
+              // Eat Sheep
+              var closest = null;
+              var d = W;
+              var wolfx = this.x;
+              Crafty("Sheep").each(function(){
+                if( Math.abs(wolfx - this.x ) < d ){
+                    closest = this;
+                    d = Math.abs(wolfx - this.x);
+                } 
+              })
+              if(d < 50){
+                closest.flip("Y");
+                closest.dead = true;
+                closest.canLand = false;
+                closest.vx = 0;
+                closest.vy = -200;
+                Crafty.s("SheepCanvas").detach(closest); 
+                Crafty.s("WolfCanvas").attach(closest);   
+              }
+              // end eat
+              this.tween({y:H},500);
+            },1500);
+        },7000,-1);
+
     for(var i=0; i<10; i++){
         var s = Crafty.e("Sheep")
             .attr({
