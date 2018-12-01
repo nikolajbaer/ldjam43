@@ -3,6 +3,7 @@
 var W=null;
 var H=null;
 var N_SHEEP=10;
+var ROUND_TIME = 30;
 var RECHARGE_WAIT=2.0;
 
 var assetsObj = {
@@ -32,7 +33,7 @@ var assetsObj = {
 }
 
 Crafty.c("Sheep",{
-    required: "2D, SheepCanvas, sheep, Gravity, Collide",
+    required: "2D, SheepCanvas, sheep, Gravity, Collide, Delay",
     events: {
         "LandedOnGround": function(){
             if(this.dead){ this.vx = 0; return; }
@@ -68,6 +69,29 @@ Crafty.c("Sheep",{
         if(Math.abs(d) < 300){
             this.fear = d / 300;
         } 
+    },
+    zap_die: function(){
+        this.y -= 50;
+        this.antigravity(); 
+        this.vx = 0;
+        this.vy = 0;
+        // TODO flash skeleton anim
+        this.delay(this.die,1000);
+    },
+    die: function(){
+        if(this.dead){ return; }
+        this.flip("Y");
+        this.dead = true;
+        this.canLand = false;
+        this.vx = 0;
+        this.vy = -200;
+        Crafty.s("SheepCanvas").detach(this); 
+        Crafty.s("WolfCanvas").attach(this);   
+        score -= 1;
+        document.getElementById("sheep_cnt").innerHTML = score;
+        if( score == 0 && countdown > 0){
+            game_over_fail();
+        }
     },
     init: function(){
         this.gravity("platform");
@@ -121,19 +145,14 @@ Crafty.c("Wolf",{
         var d = W;
         var wolfx = this.x;
         Crafty("Sheep").each(function(){
+            if( this.dead ){ return; }
             if( Math.abs(wolfx - this.x ) < d ){
                 closest = this;
                 d = Math.abs(wolfx - this.x);
             } 
         })
         if(d < 50){
-            closest.flip("Y");
-            closest.dead = true;
-            closest.canLand = false;
-            closest.vx = 0;
-            closest.vy = -200;
-            Crafty.s("SheepCanvas").detach(closest); 
-            Crafty.s("WolfCanvas").attach(closest);   
+            closest.die();
         }
     }
 });
@@ -158,6 +177,17 @@ Crafty.c("Bush", {
     }
 });
 
+
+function subdivide(p1,p2,d){
+    var mid = p2.clone().subtract(p1).scale(0.5).add(p1);
+    mid.x += (0.5 - Math.random()) * (30*d);
+    mid.y += (0.5 - Math.random()) * (30*d);
+    if( d > 0 ){
+        return subdivide(p1,mid,d-1).concat(subdivide(mid,p2,d-1));  
+    }
+    return [p1,mid,p2];
+}
+
 Crafty.c("Lightning", {
     required: "2D, LightningCanvas",
     init: function(){
@@ -166,19 +196,43 @@ Crafty.c("Lightning", {
         this.ready = true;
     },
     do_zap: function(x,y){
-        if(this.recharge > 0){ return; }
+        if(this.recharge > 0){ return false; }
         console.log("Zapping",[x,y]);
         this.zap = {
             decay:1.0,
             color:"blue",
             line: this.zap_line(x,y)
         };
+        console.log(this.zap.line);
         this.recharge = RECHARGE_WAIT;
+
+        // and zap fear and maybe zap a sheep
+        var zapped = null;
+        Crafty("Sheep").each(function(){
+            if( this.dead ){ return; }
+            
+            var sheep_pt = new Crafty.math.Vector2D(this.x,this.y);
+            var zap_pt = new Crafty.math.Vector2D(x,y);
+            var d = zap_pt.subtract(sheep_pt).magnitude();
+            var dx = this.x - x;  
+
+            //console.log(d);
+            if( Math.abs(d) < 300){
+                this.fear = (300 - Math.abs(dx)) / 300 * Math.sign(dx);
+                if( Math.abs(d) < 20 && zapped == null){ // only zap one max
+                    zapped = this;
+                    this.zap_die();
+                }
+            }
+        });
+
+        return true;
     },
     zap_line: function(x,y){
-        var l_start = {x:x,y:0};
-        var l_end = {x:x,y:y};
-        return [l_start,l_end];
+        var p1 = new Crafty.math.Vector2D(x + (0.5-Math.random()) * W/2,0);
+        var p2 = new Crafty.math.Vector2D(x,y);
+
+        return subdivide(p1,p2,Math.ceil(Math.random() * 4) + 1);
     },
     events: {
         "UpdateFrame": function(e){
@@ -215,7 +269,31 @@ Crafty.c("Lightning", {
     }
 });
 
+var countdown;
+var score;
+
+function game_over_fail(){
+    message("Game Over\nSorry, you didn't make it!");
+    Crafty.pause();
+}
+
+function countdown_handler(){
+    countdown -= 1;
+    document.getElementById("countdown").innerHTML = countdown;
+    if(countdown == 0){
+        message("Game Over!\nYour Score: " + score);
+        Crafty.pause();
+    }else{
+        setTimeout(countdown_handler,1000);      
+    }
+}
+
+function message(txt){
+    alert(txt);
+}
+
 function run(){
+    
     W = Crafty.stage.elem.clientWidth;
     H = Crafty.stage.elem.clientHeight;
   
@@ -239,7 +317,6 @@ function run(){
     // Create the wolf, hidden
     var wolf = Crafty.e("Wolf")
         .attr({x: W/2, y: H})
-        .wait_sneak(7);
 
     // And create the sheep
     for(var i=0; i<N_SHEEP; i++){
@@ -260,15 +337,15 @@ function run(){
         console.log(e);
 
         lightning.do_zap(e.clientX,e.clientY);
-
-        Crafty("Sheep").each(function(){
-            var d = this.x - e.clientX;
-            //console.log(d);
-            if( Math.abs(d) < 300){
-                this.fear = (300 - Math.abs(d)) / 300 * Math.sign(d);
-            }
-        });
     });
+
+    // Start Round (todo make it in a separate object)
+    countdown = ROUND_TIME; 
+    score = N_SHEEP;
+    document.getElementById("sheep_cnt").innerHTML = score;
+    setTimeout(countdown_handler,1000);
+    wolf.wait_sneak(7);
+    
 }
 
 window.onload = function() {

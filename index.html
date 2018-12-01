@@ -7,8 +7,38 @@
   <style>
     body { padding: 0px; width: 100%; height: 100%; margin: 0px; }
     #cr-stage { width: 100%; height: 100%; background-color: #eee; margin: 2px;}
+    #notice {
+        font-family: sans-serif;
+        position: absolute;
+        left: 0px;
+        top: 0px;
+        width: 100%;
+        z-index: 1000;
+        padding: 5px;
+        text-align: center;
+        background-color: #ddd;
+        border-bottom: solid 1px black;
+    }
+    #info { width: 100%; }
+    #left_info { float: left; padding: 5px; }
+    #right_info { float: right; padding: 5px; margin-right: 5px; }
   </style>
 <body>
+
+<div id="notice">
+    <!--
+    <div id="intro">
+        <h1>Mary Had a Sacrifical Lamb</h1>
+        <p>A Ludum Dare 43 Entry.. under construction</p>
+        <p>Click to Start</p>
+    </div>
+    -->
+    <div id="info">
+        <div id="left_info">Sheep: <span id="sheep_cnt"></span></div>
+        <!-- <div id="center">Mary Had a Sacrifical Lamb</div> -->
+        <div id="right_info">Time Left: <span id="countdown"></span></div>
+    </div>
+</div>
 
 <div id="cr-stage"></div>
 
