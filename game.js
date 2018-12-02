@@ -72,26 +72,28 @@ Crafty.c("Sheep",{
     },
     zap_die: function(){
         this.y -= 50;
-        this.antigravity(); 
         this.vx = 0;
         this.vy = 0;
+        this.antigravity();
         // TODO flash skeleton anim
-        this.delay(this.die,1000);
+        this.delay(function(){ 
+            this.visible = false; 
+            this.gravity("platform");
+            this.die();
+        },1000);
+    },
+    eat: function(){
+        sheep_lost();
+        Crafty.s("SheepCanvas").detach(this);
+        this.visible = false;
+        this.dead = true;
     },
     die: function(){
         if(this.dead){ return; }
         this.flip("Y");
         this.dead = true;
-        this.canLand = false;
         this.vx = 0;
-        this.vy = -200;
-        Crafty.s("SheepCanvas").detach(this); 
-        Crafty.s("WolfCanvas").attach(this);   
-        score -= 1;
-        document.getElementById("sheep_cnt").innerHTML = score;
-        if( score == 0 && countdown > 0){
-            game_over_fail();
-        }
+        sheep_lost();
     },
     init: function(){
         this.gravity("platform");
@@ -128,7 +130,7 @@ Crafty.c("Wolf",{
         this.x = b.x;
         this.y = H; 
         this.state = "preparing";
-        this.delay(this.pop_up,1000);
+        this.delay(this.pop_up,3000);
         b.wiggle();
     },
     pop_up: function(){
@@ -141,19 +143,19 @@ Crafty.c("Wolf",{
     },
     eat_sheep: function(){
         // Eat Sheep
-        var closest = null;
         var d = W;
         var wolfx = this.x;
+        var eaten = 0;
         Crafty("Sheep").each(function(){
             if( this.dead ){ return; }
-            if( Math.abs(wolfx - this.x ) < d ){
-                closest = this;
+            if( Math.abs(wolfx - this.x + 25 ) < d ){
                 d = Math.abs(wolfx - this.x);
+                if(d < 50 && eaten < 3){ 
+                    this.eat(); 
+                    eaten++;
+                }
             } 
         })
-        if(d < 50){
-            closest.die();
-        }
     }
 });
 
@@ -163,7 +165,7 @@ Crafty.c("Bush", {
         this.wiggle_time = 0;
     },
     wiggle: function(){
-        this.wiggle_time = 1.0;
+        this.wiggle_time = 3.0;
     },
     events: {
         "UpdateFrame": function(e){
@@ -211,7 +213,7 @@ Crafty.c("Lightning", {
         Crafty("Sheep").each(function(){
             if( this.dead ){ return; }
             
-            var sheep_pt = new Crafty.math.Vector2D(this.x,this.y);
+            var sheep_pt = new Crafty.math.Vector2D(this.x+36,this.y+25);
             var zap_pt = new Crafty.math.Vector2D(x,y);
             var d = zap_pt.subtract(sheep_pt).magnitude();
             var dx = this.x - x;  
@@ -219,7 +221,7 @@ Crafty.c("Lightning", {
             //console.log(d);
             if( Math.abs(d) < 300){
                 this.fear = (300 - Math.abs(dx)) / 300 * Math.sign(dx);
-                if( Math.abs(d) < 20 && zapped == null){ // only zap one max
+                if( Math.abs(d) < 50 && zapped == null){ // only zap one max
                     zapped = this;
                     this.zap_die();
                 }
@@ -274,7 +276,7 @@ var score;
 
 function game_over_fail(){
     message("Game Over\nSorry, you didn't make it!");
-    Crafty.pause();
+    //Crafty.pause();
 }
 
 function countdown_handler(){
@@ -282,9 +284,17 @@ function countdown_handler(){
     document.getElementById("countdown").innerHTML = countdown;
     if(countdown == 0){
         message("Game Over!\nYour Score: " + score);
-        Crafty.pause();
+        //Crafty.pause();
     }else{
         setTimeout(countdown_handler,1000);      
+    }
+}
+
+function sheep_lost(){
+    score -= 1;
+    document.getElementById("sheep_cnt").innerHTML = score;
+    if( score == 0 && countdown > 0){
+        game_over_fail();
     }
 }
 
