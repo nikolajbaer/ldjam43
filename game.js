@@ -12,7 +12,8 @@ var assetsObj = {
             tile: 73,
             tileh: 50,
             map: {
-                sheep: [0,0]
+                sheep: [0,0],
+                sheep_zap: [1,0]
             } 
         },
         "bush.png": {
@@ -33,7 +34,7 @@ var assetsObj = {
 }
 
 Crafty.c("Sheep",{
-    required: "2D, SheepCanvas, sheep, Gravity, Collide, Delay",
+    required: "2D, SheepCanvas, sheep, Gravity, Collide, Delay, SpriteAnimation",
     events: {
         "LandedOnGround": function(){
             if(this.dead){ this.vx = 0; return; }
@@ -76,6 +77,7 @@ Crafty.c("Sheep",{
         this.vy = 0;
         this.antigravity();
         // TODO flash skeleton anim
+        this.animate("zapped",-1);
         this.delay(function(){ 
             this.visible = false; 
             this.gravity("platform");
@@ -96,6 +98,7 @@ Crafty.c("Sheep",{
         sheep_lost();
     },
     init: function(){
+        this.reel("zapped",250,[ [0,0],[1,0]] );
         this.gravity("platform");
         this.w = 73;
         this.h = 50;  
