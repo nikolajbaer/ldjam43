@@ -19,6 +19,20 @@
         background-color: #ddd;
         border-bottom: solid 1px black;
     }
+    .hide {
+        display: none;
+    }
+    #intro {
+        position: absolute;
+        top: 50px;
+        width: 100%; 
+        text-align: center;
+        z-index: 1000;
+    }
+    #intro div {
+        width: 500px;
+        margin: auto;
+    }
     #info { width: 100%; }
     #left_info { float: left; padding: 5px; }
     #right_info { float: right; padding: 5px; margin-right: 5px; }
@@ -26,17 +40,24 @@
 <body>
 
 <div id="notice">
-    <!--
-    <div id="intro">
-        <h1>Mary Had a Sacrifical Lamb</h1>
-        <p>A Ludum Dare 43 Entry.. under construction</p>
-        <p>Click to Start</p>
-    </div>
-    -->
     <div id="info">
         <div id="left_info">Sheep: <span id="sheep_cnt"></span></div>
         <!-- <div id="center">Mary Had a Sacrifical Lamb</div> -->
         <div id="right_info">Time Left: <span id="countdown"></span></div>
+    </div>
+</div>
+
+<div id="intro">
+    <div>
+        <h1>Mary Had a Sacrifical Lamb</h1>
+        <p>A Ludum Dare 43 Entry.</p>
+        <h3>You are Mary, God of Thunder</h3>
+        <p>
+         Keep your little lambs alive with a gentle Zap nearby, to keep them away from the lurking wolf behind the bush. But beware, zap too close and you will sacrifice a lamb. It might just be necessary if you have to get the flock to hustle, though. <br><br>
+        Think of the herd, sacrifice the individual.<br>
+        <b>CLICK OR TAP TO ZAP</b>
+        </p>
+
     </div>
 </div>
 

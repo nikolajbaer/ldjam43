@@ -345,10 +345,13 @@ function run(){
     var lightning = Crafty.e("Lightning") 
                     .attr({x:0,y:0,w:W,h:H});
 
+    var first_click = true;
     // Bind lightning mouse handler
     Crafty.s("Mouse").bind("Click", function(e){
         console.log(e);
-
+        if(first_click){
+            document.getElementById("intro").className = "hide";
+        }
         lightning.do_zap(e.clientX,e.clientY);
     });
 
